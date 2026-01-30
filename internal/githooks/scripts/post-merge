@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ ! -f .git/SQUASH_HEAD ]; then
+    exit 0
+fi
+MERGE_HEAD=$(cat .git/MERGE_HEAD 2>/dev/null)
+SQUASH_HEAD=$(cat .git/SQUASH_HEAD 2>/dev/null)
+CURRENT_HEAD=$(git rev-parse HEAD)
+if [ -n "$MERGE_HEAD" ] && [ -n "$SQUASH_HEAD" ]; then
+    BASE=$(git merge-base "$CURRENT_HEAD" "$MERGE_HEAD" 2>/dev/null || git rev-parse "$CURRENT_HEAD^" 2>/dev/null || echo "")
+    if [ -n "$BASE" ]; then
+        COMMITS=$(git rev-list --reverse "$BASE..$MERGE_HEAD" 2>/dev/null | tr '\n' ',')
+        COMMITS="${COMMITS%,}"
+        if [ -n "$COMMITS" ]; then
+            git squash-tree add-metadata --root="$CURRENT_HEAD" --base="$BASE" --children="$COMMITS" --strategy=auto 2>/dev/null || true
+        fi
+    fi
+fi
+rm -f .git/SQUASH_HEAD
+exit 0
