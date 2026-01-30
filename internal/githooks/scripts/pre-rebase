@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ -n "$2" ] && [ "$2" != "" ]; then
+    UPSTREAM="$2"
+    if [ -n "$3" ]; then
+        git rev-list "$UPSTREAM..$3" > .git/SQUASH_PRE_REBASE_COMMITS 2>/dev/null || true
+    else
+        git rev-list "$UPSTREAM..HEAD" > .git/SQUASH_PRE_REBASE_COMMITS 2>/dev/null || true
+    fi
+    echo "$UPSTREAM" > .git/SQUASH_PRE_REBASE_BASE 2>/dev/null || true
+fi
+exit 0
