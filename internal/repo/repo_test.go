@@ -109,6 +109,18 @@ func initTempRepoWithCommit(t *testing.T) (string, func()) {
 		cleanup()
 		t.Fatalf("git init: %v %s", err, out)
 	}
+
+	// Configure git for tests (disable GPG signing)
+	for _, args := range [][]string{
+		{"git", "config", "user.email", "test@test"},
+		{"git", "config", "user.name", "Test"},
+		{"git", "config", "commit.gpgsign", "false"},
+	} {
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = dir
+		cmd.Run()
+	}
+
 	// One commit so HEAD exists
 	if err := os.WriteFile(filepath.Join(dir, "f.txt"), []byte("x"), 0644); err != nil {
 		cleanup()

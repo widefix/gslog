@@ -107,8 +107,12 @@ func initTempRepo(t *testing.T) (string, func()) {
 
 func makeCommit(t *testing.T, repoPath, msg string) string {
 	t.Helper()
-	// Set user so commit succeeds
-	for _, args := range [][]string{{"git", "config", "user.email", "test@test"}, {"git", "config", "user.name", "Test"}} {
+	// Set user so commit succeeds and disable GPG signing
+	for _, args := range [][]string{
+		{"git", "config", "user.email", "test@test"},
+		{"git", "config", "user.name", "Test"},
+		{"git", "config", "commit.gpgsign", "false"},
+	} {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = repoPath
 		cmd.Run()

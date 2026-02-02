@@ -117,5 +117,22 @@ func WriteMetadata(repoPath, rootShortHash, baseShortHash string, children []str
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git notes add: %w: %s", err, string(out))
 	}
+
+	rootFull, err := FullHash(repoPath, rootShortHash)
+	if err != nil {
+		return fmt.Errorf("resolve root full hash: %w", err)
+	}
+	childFulls := make([]string, len(children))
+	for i, c := range children {
+		full, err := FullHash(repoPath, c)
+		if err != nil {
+			return fmt.Errorf("resolve child %s full hash: %w", c, err)
+		}
+		childFulls[i] = full
+	}
+	if err := CreatePreservationRefs(repoPath, rootFull, childFulls); err != nil {
+		return fmt.Errorf("create preservation refs: %w", err)
+	}
+
 	return nil
 }
