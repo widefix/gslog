@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ "$2" = "squash" ] || [ "$2" = "merge" ]; then
+    touch .git/SQUASH_IN_PROGRESS
+    if [ -f .git/rebase-merge/stopped-sha ]; then
+        cat .git/rebase-merge/stopped-sha >> .git/SQUASH_COMMITS_LIST 2>/dev/null || true
+    fi
+fi
+exit 0

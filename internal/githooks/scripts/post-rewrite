@@ -1,0 +1,39 @@
+#!/bin/bash
+if [ "$1" != "rebase" ] && [ ! -f .git/rebase-merge ] && [ ! -f .git/rebase-apply ]; then
+    exit 0
+fi
+if [ -f .git/SQUASH_PRE_REBASE_COMMITS ] && [ -f .git/SQUASH_PRE_REBASE_BASE ]; then
+    BASE=$(cat .git/SQUASH_PRE_REBASE_BASE)
+    OLD_COMMITS=($(cat .git/SQUASH_PRE_REBASE_COMMITS))
+    while read old_sha new_sha extra; do
+        if [ "$old_sha" != "$new_sha" ] && [ -n "$new_sha" ]; then
+            SQUASHED=()
+            for old in "${OLD_COMMITS[@]}"; do
+                if git rev-parse "$old" &>/dev/null; then
+                    git merge-base --is-ancestor "$old" "$new_sha" 2>/dev/null && SQUASHED+=("$old")
+                else
+                    SQUASHED+=("$old")
+                fi
+            done
+            if [ ${#SQUASHED[@]} -gt 1 ]; then
+                CHILDREN=$(IFS=,; echo "${SQUASHED[*]}")
+                git squash-tree add-metadata --root="$new_sha" --base="$BASE" --children="$CHILDREN" --strategy=auto 2>/dev/null || true
+            fi
+        fi
+    done
+    rm -f .git/SQUASH_PRE_REBASE_COMMITS .git/SQUASH_PRE_REBASE_BASE
+else
+    while read old_sha new_sha extra; do
+        if [ "$old_sha" != "$new_sha" ] && [ -n "$new_sha" ]; then
+            BASE=$(git merge-base "$old_sha" "$new_sha" 2>/dev/null || git rev-parse "$new_sha^" 2>/dev/null || echo "")
+            if [ -n "$BASE" ]; then
+                CHILDREN=$(git rev-list --reverse "$BASE..$old_sha" 2>/dev/null | tr '\n' ',')
+                CHILDREN="${CHILDREN%,}"
+                if [ -n "$CHILDREN" ] && [ $(echo "$CHILDREN" | tr ',' '\n' | wc -l) -gt 1 ]; then
+                    git squash-tree add-metadata --root="$new_sha" --base="$BASE" --children="$CHILDREN" --strategy=auto 2>/dev/null || true
+                fi
+            fi
+        fi
+    done
+fi
+exit 0
